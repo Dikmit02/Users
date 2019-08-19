@@ -1,5 +1,6 @@
 var mongoose=require('mongoose')
 var validator=require('validator')
+var bcrypt=require('bcrypt')
 
 
 var UserSchema= new mongoose.Schema({
@@ -53,9 +54,26 @@ UserSchema.statics.CheckCredentials=async(email,password)=>{
     if(!user){
         throw new Error('User not exits')
     }
+
+    const ismatched=await bcrypt.compare(password,user.password)
+    
+    if(!ismatched){
+        throw new Error('Unable to login')
+    }
+    
     return user
 
 }
+
+UserSchema.pre('save',async function(next){
+    const user=this
+    if(user.isModified('password')){
+        user.password=await bcrypt.hash(user.password,8)
+    }
+    
+
+    next()
+})
 
 
 var User=mongoose.model('user',UserSchema)
